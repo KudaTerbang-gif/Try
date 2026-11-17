@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Loves me, loves me not</title>
+<style>
+html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+canvas{position:absolute;inset:0;margin:auto;display:block;image-rendering:pixelated}
+</style></head><body><canvas id="c" width="180" height="320"></canvas>
+<script>
+const W=180,H=320,c=document.getElementById('c'),x=c.getContext('2d');
+function fit(){const s=Math.min(innerWidth/W,innerHeight/H);c.style.width=W*s+'px';c.style.height=H*s+'px'}
+fit();onresize=fit;
+let sd=7;function R(){sd=(sd+0x6D2B79F5)|0;let t=Math.imul(sd^sd>>>15,1|sd);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}
+const U=(a,b)=>a+(b-a)*R(),RI=(a,b)=>Math.floor(U(a,b+1)),CH=a=>a[Math.floor(R()*a.length)];
+const rgb=a=>`rgb(${a[0]|0},${a[1]|0},${a[2]|0})`,lerp=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t);
+const GY=290,CX0=90,CY0=120,NP=11,PINK='rgb(255,130,175)',BLUE='rgb(90,150,255)',YEL='rgb(255,205,40)',YEL2='rgb(215,130,20)';
+const px=(a,b,col)=>{x.fillStyle=col;x.fillRect(Math.floor(a),Math.floor(b),1,1)};
+
+// ---------- background (sekali) ----------
+const bg=document.createElement('canvas');bg.width=W;bg.height=H;const b=bg.getContext('2d');
+const bf=(col,a,b2,w,h)=>{b.fillStyle=col;b.fillRect(a,b2,w,h)};
+for(let y=0;y<H;y++)bf(rgb(lerp([12,14,60],[40,60,150],Math.min(y/250,1))),0,y,W,1);
+const MX=150,MY=45;
+for(let dy=-22;dy<=22;dy++)for(let dx=-22;dx<=22;dx++){const d=Math.hypot(dx,dy);if(d>10&&d<22&&Math.abs(dx+dy)%2==0&&R()<(22-d)/14)bf('rgb(150,160,220)',MX+dx,MY+dy,1,1)}
+b.fillStyle='rgb(250,235,150)';b.beginPath();b.arc(MX,MY,10,0,7);b.fill();
+b.fillStyle='rgb(225,205,120)';b.beginPath();b.arc(MX+3,MY+2,3,0,7);b.fill();
+for(let i=0;i<W;i++){
+ let y1=Math.floor(232+12*Math.sin(i*.035)+6*Math.sin(i*.09+1));bf('rgb(28,38,110)',i,y1,1,H-y1);
+ let y2=Math.floor(255+8*Math.sin(i*.05+2)+4*Math.sin(i*.13));bf('rgb(18,28,85)',i,y2,1,H-y2)}
+for(let y=GY-12;y<H;y++)bf(rgb(lerp([40,110,40],[20,70,30],(y-GY+12)/42)),0,y,W,1);
+for(let i=0;i<500;i++){const a=RI(0,W-1),y=RI(GY-14,H-1),h=RI(3,8);bf(CH(['rgb(70,160,60)','rgb(50,130,50)','rgb(90,180,70)']),a,y-h,1,h)}
+const stars=Array.from({length:45},()=>[RI(0,W-1),RI(0,199),R()*6]);
+
+// ---------- helper ----------
+const HEART=["0110110","1111111","1111111","0111110","0011100","0001000"];
+function heart(a,b2,col){HEART.forEach((r,j)=>[...r].forEach((ch,i)=>{if(ch=='1')px(a+i-3,b2+j-3,col)}))}
+function petal(a,b2,ang,L=28,Wd=6){const p=[],n=8;
+ for(let k=0;k<=n;k++){const t=k/n;p.push([t*L,-Wd*Math.sin(Math.PI*t)**.8])}
+ for(let k=n;k>=0;k--){const t=k/n;p.push([t*L,Wd*Math.sin(Math.PI*t)**.8])}
+ const ca=Math.cos(ang),sa=Math.sin(ang);return p.map(([u,v])=>[a+u*ca-v*sa,b2+u*sa+v*ca])}
+function poly(pts,f,s){x.beginPath();pts.forEach(([a,b2],i)=>i?x.lineTo(a,b2):x.moveTo(a,b2));x.closePath();x.fillStyle=f;x.fill();if(s){x.strokeStyle=s;x.lineWidth=1;x.stroke()}}
+function line(a,b2,c2,d,col,w=1){x.strokeStyle=col;x.lineWidth=w;x.beginPath();x.moveTo(a,b2);x.lineTo(c2,d);x.stroke()}
+
+// ---------- state ----------
+function reset(){const g={petals:[],fly:[],hearts:[],pulled:0,t:0,text:'',done:null,hs:0,sparks:[],shoot:null,ns:3,flies:[]};
+ for(let i=0;i<NP;i++)g.petals.push({a:i*2*Math.PI/NP+.2,on:1});
+ for(let i=0;i<16;i++)g.flies.push({x:U(10,W-10),y:U(190,300),ph:R()*6,sp:U(.4,1)});return g}
+let G=reset();
+
+function tap(){
+ if(G.done!==null){G=reset();return}
+ const left=G.petals.filter(p=>p.on);if(!left.length)return;
+ const p=CH(left);p.on=0;G.pulled++;G.text=G.pulled%2?'LOVES ME':'LOVES ME NOT';
+ const a=p.a+Math.sin(G.t*1.3)*.05;
+ G.fly.push({x:CX0+Math.cos(a)*6,y:CY0+Math.sin(a)*6,a,vx:Math.cos(a)*35+U(10,30),vy:Math.sin(a)*35-25,spin:U(-6,6),land:0,gy:RI(GY+2,H-8)});
+ for(let i=0;i<10;i++){const an=U(0,6.28),s=U(15,55);G.sparks.push({x:CX0+Math.cos(a)*20,y:CY0+Math.sin(a)*20,vx:Math.cos(an)*s,vy:Math.sin(an)*s-10,life:U(.4,.9)})}
+ if(!G.petals.some(q=>q.on)){G.done=G.t;for(let i=0;i<30;i++){const an=U(0,6.28),s=U(20,90);G.sparks.push({x:CX0,y:CY0,vx:Math.cos(an)*s,vy:Math.sin(an)*s,life:U(.6,1.4)})}}
+}
+c.addEventListener('pointerdown',e=>{e.preventDefault();tap()});
+addEventListener('keydown',e=>{if(e.code=='Space')tap()});
+
+function update(dt){
+ G.t+=dt;const t=G.t;
+ for(const f of G.fly)if(!f.land){f.vy+=70*dt;f.vx+=8*dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.a+=f.spin*dt;
+  if(f.y>=f.gy){f.y=f.gy;f.land=1;f.a=U(-.3,.3)+CH([0,Math.PI])}}
+ for(const s of G.sparks){s.x+=s.vx*dt;s.y+=s.vy*dt;s.vy+=40*dt;s.life-=dt}
+ G.sparks=G.sparks.filter(s=>s.life>0);
+ if(!G.shoot&&t>G.ns)G.shoot={x:RI(90,W),y:RI(10,70),life:1};
+ if(G.shoot){G.shoot.x-=120*dt;G.shoot.y+=60*dt;G.shoot.life-=dt;if(G.shoot.life<=0){G.shoot=null;G.ns=t+U(4,8)}}
+ if(G.done!==null&&t-G.done>.5&&t>G.hs){G.hs=t+.1;G.hearts.push({x:CX0+U(-6,6),y:CY0-8,ph:R()*6,v:U(25,45)})}
+ for(const h of G.hearts)h.y-=h.v*dt;
+ G.hearts=G.hearts.filter(h=>h.y>55);
+}
+
+function draw(){
+ const t=G.t;x.drawImage(bg,0,0);
+ for(const[sx,sy,ph]of stars)if(Math.sin(t*2+ph)>-.3){px(sx,sy,'rgb(230,230,255)');if(ph>5)px(sx+1,sy,'rgb(150,150,210)')}
+ if(G.shoot)for(let k=0;k<10;k++){const v=Math.max(40,255-k*25);px(G.shoot.x+k*2,G.shoot.y-k,`rgb(${v},${v},${Math.min(255,v+20)})`)}
+ for(const f of G.flies){const fx=f.x+Math.sin(t*f.sp+f.ph)*12,fy=f.y+Math.cos(t*f.sp*.8+f.ph)*8;
+  if(Math.sin(t*3+f.ph)>-.2){for(const[ox,oy]of[[1,0],[-1,0],[0,1],[0,-1]])px(fx+ox,fy+oy,'rgb(110,120,40)');px(fx,fy,'rgb(255,250,150)')}}
+ const sway=Math.sin(t*1.2)*1.5,cx=CX0+sway,cy=CY0;
+ // batang
+ const sp=u=>[(1-u)**2*90+2*u*(1-u)*(82+sway)+u*u*cx,(1-u)**2*(GY+2)+2*u*(1-u)*210+u*u*cy];
+ x.lineCap='butt';x.strokeStyle='rgb(40,130,50)';x.lineWidth=4;x.beginPath();x.moveTo(90,GY+2);x.quadraticCurveTo(82+sway,210,cx,cy);x.stroke();
+ x.strokeStyle='rgb(80,180,70)';x.lineWidth=1;x.beginPath();x.moveTo(89,GY+2);x.quadraticCurveTo(81+sway,210,cx-1,cy);x.stroke();
+ // daun
+ for(const[idx,side]of[[6,-1],[10,1]]){const[bx,by]=sp(idx/20),up=[],lo=[];
+  for(let k=0;k<=8;k++){const u=k/8;up.push([bx+u*26*side,by-u*10-6*Math.sin(Math.PI*u)])}
+  for(let k=8;k>=0;k--){const u=k/8;lo.push([bx+u*26*side,by-u*10+4*Math.sin(Math.PI*u)])}
+  poly(up.concat(lo),'rgb(60,160,60)');line(bx,by,bx+26*side,by-10,'rgb(30,100,40)')}
+ // kelopak jatuh
+ for(const f of G.fly)poly(petal(f.x,f.y,f.a,22,5),YEL,YEL2);
+ // kelopak menempel
+ for(const p of G.petals)if(p.on){const a=p.a+Math.sin(t*1.5+p.a)*.03;
+  poly(petal(cx+Math.cos(a)*8,cy+Math.sin(a)*8,a),YEL,YEL2);
+  line(cx+Math.cos(a)*10,cy+Math.sin(a)*10,cx+Math.cos(a)*28,cy+Math.sin(a)*28,'rgb(240,160,25)')}
+ // pusat bunga
+ if(G.done!==null){const gl=2+2*Math.sin(t*6);x.strokeStyle='rgb(255,220,120)';x.lineWidth=1;x.beginPath();x.arc(cx,cy,11+gl,0,7);x.stroke()}
+ x.fillStyle='rgb(215,125,25)';x.beginPath();x.arc(cx,cy,11,0,7);x.fill();
+ x.fillStyle='rgb(85,45,20)';x.beginPath();x.arc(cx,cy,9,0,7);x.fill();
+ for(let k=1;k<38;k++){const r=1.35*Math.sqrt(k),an=k*2.399963;px(cx+Math.cos(an)*r,cy+Math.sin(an)*r,k%3?'rgb(150,90,35)':'rgb(60,30,12)')}
+ // rumput depan
+ for(let i=0;i<W;i+=6){const s=Math.sin(t*2+i)*1.5;line(i+.5,H,i+s+.5,H-9-(i*7%5),'rgb(80,180,70)')}
+ for(const q of G.sparks){const col=q.life>.3?'rgb(255,240,160)':'rgb(255,180,60)';px(q.x,q.y,col);px(q.x+1,q.y,col)}
+ for(const h of G.hearts)heart(h.x+Math.sin(t*3+h.ph)*10,h.y,'rgb(230,60,90)');
+ // teks
+ x.font='bold 15px monospace';x.textAlign='center';x.textBaseline='middle';
+ if(G.pulled==0){x.fillStyle='rgb(230,230,255)';x.fillText('TAP!',W/2,32)}
+ if(G.text){const bob=G.done!==null?Math.floor(2*Math.sin(t*6)):0;
+  x.fillStyle='rgb(10,10,40)';x.fillText(G.text,W/2+1,33+bob);
+  x.fillStyle=G.text=='LOVES ME'?PINK:BLUE;x.fillText(G.text,W/2,32+bob)}
+}
+
+let last=performance.now();
+(function loop(now){const dt=Math.min((now-last)/1000,.05);last=now;update(dt);draw();requestAnimationFrame(loop)})(last);
+</script></body></html>
